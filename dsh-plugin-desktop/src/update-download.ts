@@ -4,15 +4,19 @@ import { randomUUID } from 'node:crypto'
 import { chmod, lstat, mkdir, open, readFile, rename, unlink } from 'node:fs/promises'
 import { basename, dirname, extname, isAbsolute, join, resolve } from 'node:path'
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
-import { compareSemVerVersions, parseSemVer } from './update-checker.ts'
+import { compareSemVerVersions, DESKTOP_UPDATE_OWNER, DESKTOP_UPDATE_REPO, parseSemVer } from './update-checker.ts'
 
-/** Desktop platforms with a fixed installer download endpoint. */
+/** Desktop platforms with a version-resolved installer download URL. */
 export type DesktopDownloadPlatform = 'darwin' | 'win32'
 
-/** Fixed download endpoints that record one user-confirmed installer download. */
-export const DESKTOP_DOWNLOAD_URLS: Readonly<Record<DesktopDownloadPlatform, string>> = {
-  darwin: 'https://www.dshdesktop.cn/api/downloads/mac',
-  win32: 'https://www.dshdesktop.cn/api/downloads/windows',
+/**
+ * Installer download URLs for the self-hosted update channel, resolved per release version.
+ * Windows artifacts come from this fork's GitHub Releases; macOS keeps the upstream mirror.
+ */
+export const DESKTOP_DOWNLOAD_URLS: Readonly<Record<DesktopDownloadPlatform, (version: string) => string>> = {
+  darwin: () => 'https://www.dshdesktop.cn/api/downloads/mac',
+  win32: version =>
+    `https://github.com/${DESKTOP_UPDATE_OWNER}/${DESKTOP_UPDATE_REPO}/releases/download/v${version}/DSH-Desktop-${version}-x64-Setup.exe`,
 }
 
 /** Maximum accepted installer size, in bytes. */
@@ -110,7 +114,7 @@ export async function downloadDesktopUpdate(options: DownloadDesktopUpdateOption
 
   let response: Response
   try {
-    response = await options.request(DESKTOP_DOWNLOAD_URLS[platform], {
+    response = await options.request(DESKTOP_DOWNLOAD_URLS[platform](options.version), {
       method: 'GET',
       cache: 'no-store',
       redirect: 'follow',

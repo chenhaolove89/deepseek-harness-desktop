@@ -1,7 +1,13 @@
-/** Headless version checks against the public DSH Desktop release service. */
+/** Headless version checks against this fork's GitHub Releases channel. */
 
-/** Public endpoint returning the latest stable DSH Desktop version. */
-export const DESKTOP_VERSION_ENDPOINT = 'https://www.dshdesktop.cn/api/desktop/version'
+/** GitHub account owning the fork that serves as the self-hosted update channel. */
+export const DESKTOP_UPDATE_OWNER = 'chenhaolove89'
+/** Fork repository holding the releases and installer assets. */
+export const DESKTOP_UPDATE_REPO = 'deepseek-harness-desktop'
+
+/** Public endpoint returning the latest stable DSH Desktop release of the fork. */
+export const DESKTOP_VERSION_ENDPOINT =
+  `https://api.github.com/repos/${DESKTOP_UPDATE_OWNER}/${DESKTOP_UPDATE_REPO}/releases/latest`
 
 /** Maximum response body bytes accepted from the version service. */
 export const MAX_VERSION_RESPONSE_BYTES = 4 * 1024
@@ -169,8 +175,16 @@ function parseVersionResponse(body: string): ParsedSemVer | null {
   } catch {
     return null
   }
-  if (!isRecord(value) || typeof value.version !== 'string') return null
-  return parseCanonicalStableVersion(value.version)
+  if (!isRecord(value)) return null
+  // The plain `version` field keeps its original strict semantics.
+  if (typeof value.version === 'string') {
+    return parseCanonicalStableVersion(value.version)
+  }
+  // GitHub release payloads carry the semver in `tag_name`, conventionally prefixed with `v`.
+  if (typeof value.tag_name === 'string' && value.tag_name.startsWith('v')) {
+    return parseCanonicalStableVersion(value.tag_name.slice(1))
+  }
+  return null
 }
 
 function parseCanonicalStableVersion(input: string): ParsedSemVer | null {
