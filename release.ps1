@@ -63,12 +63,17 @@ Write-Host "==> 安装包就绪: $asset"
 git add package.json dsh-plugin-desktop/package.json
 git commit -m "release: v$Version"
 git tag "v$Version"
-git push origin master --tags
-if ($LASTEXITCODE -ne 0) { throw "git push 失败" }
+# 只推 master 和本次新 tag；不要用 --tags 整批推送（fork 会继承上游旧 tag，导致整批推送失败）
+git push origin master
+if ($LASTEXITCODE -ne 0) { throw "git push master 失败" }
+git push origin "v$Version"
+if ($LASTEXITCODE -ne 0) { throw "git push tag 失败" }
 Write-Host "==> 已推送 master 与 tag v$Version"
 
-# ---- 5. 创建 GitHub Release 并上传安装包 ----
-gh release create "v$Version" $asset --title "DSH Desktop v$Version" --generate-notes
+# ---- 5. 创建 GitHub Release 并上传安装包（分两步，避免大文件上传超时） ----
+gh release create "v$Version" --title "DSH Desktop v$Version" --generate-notes
 if ($LASTEXITCODE -ne 0) { throw "gh release create 失败" }
+gh release upload "v$Version" $asset
+if ($LASTEXITCODE -ne 0) { throw "gh release upload 失败" }
 Write-Host "==> Release v$Version 已发布：https://github.com/chenhaolove89/deepseek-harness-desktop/releases"
 Write-Host "==> 已安装的 DSH Desktop（本 fork 构建）将自动检测到该版本。完成！"
