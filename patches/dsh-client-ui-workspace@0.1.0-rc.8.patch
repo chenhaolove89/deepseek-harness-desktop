@@ -1,0 +1,19 @@
+diff --git a/lib/client.js b/lib/client.js
+index 7ca5fd3d02cdcc27c05daa23af5879101eb3c97b..229124b26e4be1b69d2971fa459dcdac1751af1c 100644
+--- a/lib/client.js
++++ b/lib/client.js
+@@ -1851,6 +1851,7 @@ window.__ModuleLoader__.load({
+ 				});
+ 			};
+ 			return (0, react_jsx_runtime.jsxs)("div", {
++				"data-dsh-workspace-drop-target": "",
+ 				className: clsx(WorkspaceBrowser_module_css_default.root, !wide && WorkspaceBrowser_module_css_default.rail),
+ 				children: [
+ 					(0, react_jsx_runtime.jsxs)("div", {
+@@ -2432,4 +2433,4 @@ window.__ModuleLoader__.load({
+ 	}
+ });
+ 
+-//# sourceMappingURL=client.js.map
+\ No newline at end of file
++//# sourceMappingURL=client.js.map
